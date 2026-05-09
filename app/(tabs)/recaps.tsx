@@ -145,6 +145,7 @@ export default function Recaps() {
         keyExtractor={(_, i) => i.toString()}
         onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
         contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View>
             <Text style={styles.heading}>Your Recaps</Text>
@@ -217,7 +218,7 @@ export default function Recaps() {
         )}
         ListFooterComponent={
           chatLoading ? (
-            <View style={styles.assistantBubble}>
+            <View style={[styles.bubble, styles.assistantBubble]}>
               <ActivityIndicator size="small" color="#6C63FF" />
             </View>
           ) : null
@@ -230,6 +231,7 @@ export default function Recaps() {
           value={input}
           onChangeText={setInput}
           placeholder="What was my best day this week?"
+          placeholderTextColor="#A0A0B0"
           returnKeyType="send"
           onSubmitEditing={sendMessage}
         />
@@ -246,81 +248,136 @@ export default function Recaps() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
+  container: { flex: 1, backgroundColor: "#FAFBFF" },
   listContent: { padding: 24, paddingBottom: 8 },
-  heading: { fontSize: 26, fontWeight: "bold", color: "#1a1a1a" },
-  subtitle: { fontSize: 14, color: "#888", marginTop: 4, marginBottom: 24 },
-  periodRow: { flexDirection: "row", gap: 12, marginBottom: 20 },
-  periodButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: "#f0f0f0",
+  heading: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#1a1a2e",
+    letterSpacing: -0.5,
   },
-  periodActive: { backgroundColor: "#6C63FF" },
-  periodText: { fontSize: 14, fontWeight: "600", color: "#666" },
+  subtitle: { fontSize: 14, color: "#8E8EA0", marginTop: 4, marginBottom: 24 },
+  periodRow: { flexDirection: "row", gap: 10, marginBottom: 20 },
+  periodButton: {
+    paddingHorizontal: 22,
+    paddingVertical: 11,
+    borderRadius: 24,
+    backgroundColor: "#F3F2FA",
+  },
+  periodActive: {
+    backgroundColor: "#6C63FF",
+    shadowColor: "#6C63FF",
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  periodText: { fontSize: 14, fontWeight: "600", color: "#8E8EA0" },
   periodTextActive: { color: "#fff" },
   generateButton: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: "#1a1a2e",
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
-  generateText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  generateText: { color: "#fff", fontSize: 16, fontWeight: "700" },
   recapCard: {
     marginTop: 24,
-    backgroundColor: "#f8f7ff",
-    borderRadius: 12,
+    backgroundColor: "#fff",
+    borderRadius: 16,
     padding: 20,
-    borderWidth: 1,
-    borderColor: "#e8e5ff",
+    borderLeftWidth: 4,
+    borderLeftColor: "#6C63FF",
+    shadowColor: "#6C63FF",
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
-  recapText: { fontSize: 15, lineHeight: 24, color: "#333" },
+  recapText: { fontSize: 15, lineHeight: 24, color: "#2D2D3A" },
   errorCard: {
     marginTop: 24,
-    backgroundColor: "#fff0f0",
-    borderRadius: 12,
+    backgroundColor: "#FFF5F5",
+    borderRadius: 14,
     padding: 16,
-    borderWidth: 1,
-    borderColor: "#ffdddd",
+    borderLeftWidth: 4,
+    borderLeftColor: "#E54D4D",
   },
-  errorText: { fontSize: 14, color: "#cc0000" },
+  errorText: { fontSize: 14, color: "#E54D4D" },
   chatDivider: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 32,
+    marginTop: 36,
     marginBottom: 16,
   },
-  dividerLine: { flex: 1, height: 1, backgroundColor: "#e0e0e0" },
-  dividerText: { paddingHorizontal: 12, fontSize: 13, color: "#888" },
-  bubble: { maxWidth: "80%", padding: 12, borderRadius: 16, marginBottom: 8 },
-  userBubble: { alignSelf: "flex-end", backgroundColor: "#6C63FF" },
-  assistantBubble: { alignSelf: "flex-start", backgroundColor: "#f0f0f0" },
-  bubbleText: { fontSize: 15, lineHeight: 22, color: "#1a1a1a" },
+  dividerLine: { flex: 1, height: 1, backgroundColor: "#EDEDF5" },
+  dividerText: { paddingHorizontal: 14, fontSize: 12, color: "#8E8EA0", fontWeight: "600" },
+  bubble: {
+    maxWidth: "80%",
+    padding: 14,
+    borderRadius: 18,
+    marginBottom: 10,
+  },
+  userBubble: {
+    alignSelf: "flex-end",
+    backgroundColor: "#6C63FF",
+    borderBottomRightRadius: 4,
+    shadowColor: "#6C63FF",
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+  },
+  assistantBubble: {
+    alignSelf: "flex-start",
+    backgroundColor: "#fff",
+    borderBottomLeftRadius: 4,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  bubbleText: { fontSize: 15, lineHeight: 22, color: "#2D2D3A" },
   userBubbleText: { color: "#fff" },
   inputRow: {
     flexDirection: "row",
-    padding: 12,
+    padding: 14,
+    paddingBottom: 28,
     backgroundColor: "#fff",
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
+    borderTopWidth: 0,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: -4 },
+    elevation: 4,
   },
   input: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    fontSize: 16,
+    backgroundColor: "#F8F8FC",
+    borderWidth: 1.5,
+    borderColor: "#EDEDF5",
+    borderRadius: 24,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: "#1a1a2e",
   },
   sendButton: {
-    marginLeft: 8,
+    marginLeft: 10,
     backgroundColor: "#6C63FF",
-    paddingHorizontal: 20,
-    borderRadius: 20,
+    paddingHorizontal: 22,
+    borderRadius: 24,
     justifyContent: "center",
+    shadowColor: "#6C63FF",
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
   },
-  sendDisabled: { opacity: 0.5 },
-  sendText: { color: "#fff", fontWeight: "600" },
+  sendDisabled: { opacity: 0.4 },
+  sendText: { color: "#fff", fontWeight: "700", fontSize: 15 },
 });

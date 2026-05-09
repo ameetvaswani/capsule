@@ -58,7 +58,7 @@ export default function Today() {
     setMoods([]);
     setDate(new Date());
     setShowDatePicker(false);
-    Alert.alert("Saved", "Your memory has been captured ✨");
+    Alert.alert("Saved", "Your memory has been captured");
   };
 
   return (
@@ -66,20 +66,22 @@ export default function Today() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.heading}>
           {isToday(date) ? "What happened today?" : "A memory from the past"}
         </Text>
-        <TouchableOpacity onPress={() => setShowDatePicker(!showDatePicker)}>
-          <Text style={styles.date}>
+        <TouchableOpacity
+          style={styles.dateChip}
+          onPress={() => setShowDatePicker(!showDatePicker)}
+        >
+          <Text style={styles.dateText}>
             {date.toLocaleDateString("en-US", {
               weekday: "long",
               month: "long",
               day: "numeric",
             })}
-            {"  "}
-            <Text style={styles.changeDate}>Change date</Text>
           </Text>
+          <Text style={styles.dateChangeIcon}>📅</Text>
         </TouchableOpacity>
 
         <Modal visible={showDatePicker} transparent animationType="fade">
@@ -107,14 +109,17 @@ export default function Today() {
           </Pressable>
         </Modal>
 
-        <TextInput
-          style={styles.input}
-          value={memory}
-          onChangeText={setMemory}
-          placeholder="A moment, a thought, a feeling..."
-          multiline
-          textAlignVertical="top"
-        />
+        <View style={styles.inputCard}>
+          <TextInput
+            style={styles.input}
+            value={memory}
+            onChangeText={setMemory}
+            placeholder="A moment, a thought, a feeling..."
+            placeholderTextColor="#B0B0C0"
+            multiline
+            textAlignVertical="top"
+          />
+        </View>
 
         <Text style={styles.moodLabel}>How are you feeling?</Text>
         <View style={styles.moodRow}>
@@ -126,11 +131,12 @@ export default function Today() {
               >
                 <Text style={styles.moodEmoji}>{m.emoji}</Text>
               </TouchableOpacity>
-              <Text style={styles.moodTooltip}>{m.label}</Text>
+              <Text style={[styles.moodTooltip, moods.includes(m.emoji) && styles.moodTooltipActive]}>
+                {m.label}
+              </Text>
             </View>
           ))}
         </View>
-
 
         <TouchableOpacity
           style={[styles.saveButton, !memory.trim() && styles.saveDisabled]}
@@ -145,59 +151,102 @@ export default function Today() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
-  content: { padding: 24, paddingTop: 16 },
-  heading: { fontSize: 26, fontWeight: "bold", color: "#1a1a1a" },
-  date: { fontSize: 14, color: "#888", marginTop: 4, marginBottom: 24 },
-  changeDate: { color: "#6C63FF", fontWeight: "600" },
+  container: { flex: 1, backgroundColor: "#FAFBFF" },
+  content: { padding: 24, paddingTop: 20, paddingBottom: 40 },
+  heading: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#1a1a2e",
+    letterSpacing: -0.5,
+  },
+  dateChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    backgroundColor: "#EDE9FF",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginTop: 10,
+    marginBottom: 24,
+    gap: 8,
+  },
+  dateText: { fontSize: 13, color: "#6C63FF", fontWeight: "600" },
+  dateChangeIcon: { fontSize: 14 },
   calendarOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
+    backgroundColor: "rgba(10,10,30,0.5)",
     justifyContent: "center",
     alignItems: "center",
     padding: 40,
   },
   calendarPopup: {
     backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 8,
-    width: 300,
+    borderRadius: 20,
+    padding: 12,
+    width: 310,
     shadowColor: "#000",
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.2,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 12,
+  },
+  inputCard: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 4,
+    shadowColor: "#6C63FF",
+    shadowOpacity: 0.06,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
+    elevation: 3,
   },
   input: {
-    borderWidth: 1,
-    borderColor: "#e0e0e0",
-    borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    minHeight: 160,
+    minHeight: 150,
     lineHeight: 24,
+    color: "#1a1a2e",
   },
-  moodLabel: { fontSize: 16, fontWeight: "600", marginTop: 24, marginBottom: 12 },
-  moodRow: { flexDirection: "row", gap: 12 },
+  moodLabel: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#1a1a2e",
+    marginTop: 28,
+    marginBottom: 14,
+  },
+  moodRow: { flexDirection: "row", gap: 10, flexWrap: "wrap" },
   moodItem: { alignItems: "center" },
   moodButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "#f5f5f5",
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#F3F2FA",
     justifyContent: "center",
     alignItems: "center",
+    borderWidth: 2,
+    borderColor: "transparent",
   },
-  moodSelected: { backgroundColor: "#e8e5ff", borderWidth: 2, borderColor: "#6C63FF" },
+  moodSelected: {
+    backgroundColor: "#EDE9FF",
+    borderColor: "#6C63FF",
+    transform: [{ scale: 1.1 }],
+  },
   moodEmoji: { fontSize: 24 },
-  moodTooltip: { fontSize: 11, color: "#888", marginTop: 4 },
+  moodTooltip: { fontSize: 10, color: "#999", marginTop: 5, fontWeight: "500" },
+  moodTooltipActive: { color: "#6C63FF", fontWeight: "700" },
   saveButton: {
     backgroundColor: "#6C63FF",
-    padding: 16,
-    borderRadius: 12,
+    padding: 18,
+    borderRadius: 14,
     alignItems: "center",
-    marginTop: 32,
+    marginTop: 36,
+    shadowColor: "#6C63FF",
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
   },
-  saveDisabled: { opacity: 0.5 },
-  saveText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  saveDisabled: { opacity: 0.4 },
+  saveText: { color: "#fff", fontSize: 16, fontWeight: "700" },
 });

@@ -39,24 +39,35 @@ export default function Login() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <Text style={styles.brand}>Capsule</Text>
-      <Text style={styles.title}>{isSignUp ? "Sign Up" : "Sign In"}</Text>
+      <View style={styles.logoContainer}>
+        <View style={styles.logoCircle}>
+          <Text style={styles.logoIcon}>💊</Text>
+        </View>
+        <Text style={styles.brand}>Capsule</Text>
+        <Text style={styles.tagline}>Your memories, treasured</Text>
+      </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
+      <Text style={styles.title}>{isSignUp ? "Create your account" : "Welcome back"}</Text>
+
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          placeholderTextColor="#A0A0B0"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          placeholderTextColor="#A0A0B0"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+      </View>
 
       <TouchableOpacity style={styles.button} onPress={handleSubmit}>
         <Text style={styles.buttonText}>
@@ -76,24 +87,58 @@ export default function Login() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", padding: 24, backgroundColor: "#fff" },
-  brand: { fontSize: 36, fontWeight: "bold", textAlign: "center", color: "#6C63FF", marginBottom: 8 },
-  title: { fontSize: 18, textAlign: "center", marginBottom: 32, color: "#888" },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 14,
-    fontSize: 16,
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    padding: 28,
+    backgroundColor: "#FAFBFF",
+  },
+  logoContainer: { alignItems: "center", marginBottom: 40 },
+  logoCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "#EDE9FF",
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 16,
+  },
+  logoIcon: { fontSize: 32 },
+  brand: {
+    fontSize: 34,
+    fontWeight: "800",
+    color: "#6C63FF",
+    letterSpacing: -0.5,
+  },
+  tagline: { fontSize: 15, color: "#8E8EA0", marginTop: 4 },
+  title: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#1a1a2e",
+    marginBottom: 24,
+  },
+  inputContainer: { gap: 14 },
+  input: {
+    backgroundColor: "#fff",
+    borderWidth: 1.5,
+    borderColor: "#EDEDF5",
+    borderRadius: 14,
+    padding: 16,
+    fontSize: 16,
+    color: "#1a1a2e",
   },
   button: {
     backgroundColor: "#6C63FF",
-    padding: 16,
-    borderRadius: 8,
+    padding: 18,
+    borderRadius: 14,
     alignItems: "center",
-    marginTop: 8,
+    marginTop: 24,
+    shadowColor: "#6C63FF",
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
   },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  toggle: { textAlign: "center", color: "#6C63FF", marginTop: 16 },
+  buttonText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  toggle: { textAlign: "center", color: "#6C63FF", marginTop: 20, fontSize: 14 },
 });
