@@ -9,30 +9,55 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Modal,
+  Pressable,
 } from "react-native";
+import { Calendar } from "react-native-calendars";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useAuth } from "../../lib/auth-context";
 
+function isToday(d: Date) {
+  const now = new Date();
+  return d.toISOString().split("T")[0] === now.toISOString().split("T")[0];
+}
+
 export default function Today() {
   const { user } = useAuth();
   const [memory, setMemory] = useState("");
-  const [mood, setMood] = useState<string | null>(null);
+  const [moods, setMoods] = useState<string[]>([]);
+  const [date, setDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const moods = ["😊", "😌", "😢", "😤", "🤩", "😴"];
+  const moodOptions = [
+    { emoji: "😊", label: "Happy" },
+    { emoji: "😌", label: "Calm" },
+    { emoji: "😢", label: "Sad" },
+    { emoji: "😤", label: "Frustrated" },
+    { emoji: "🤩", label: "Excited" },
+    { emoji: "😴", label: "Tired" },
+  ];
+
+  const toggleMood = (emoji: string) => {
+    setMoods((prev) =>
+      prev.includes(emoji) ? prev.filter((m) => m !== emoji) : [...prev, emoji]
+    );
+  };
 
   const saveMemory = async () => {
     if (!memory.trim() || !user) return;
 
     await addDoc(collection(db, "users", user.uid, "memories"), {
       text: memory.trim(),
-      mood,
+      mood: moods.length > 0 ? moods.join(" ") : null,
       createdAt: serverTimestamp(),
-      date: new Date().toISOString().split("T")[0],
+      date: date.toISOString().split("T")[0],
     });
 
     setMemory("");
-    setMood(null);
+    setMoods([]);
+    setDate(new Date());
+    setShowDatePicker(false);
     Alert.alert("Saved", "Your memory has been captured ✨");
   };
 
@@ -42,14 +67,45 @@ export default function Today() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.heading}>What happened today?</Text>
-        <Text style={styles.date}>
-          {new Date().toLocaleDateString("en-US", {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-          })}
+        <Text style={styles.heading}>
+          {isToday(date) ? "What happened today?" : "A memory from the past"}
         </Text>
+        <TouchableOpacity onPress={() => setShowDatePicker(!showDatePicker)}>
+          <Text style={styles.date}>
+            {date.toLocaleDateString("en-US", {
+              weekday: "long",
+              month: "long",
+              day: "numeric",
+            })}
+            {"  "}
+            <Text style={styles.changeDate}>Change date</Text>
+          </Text>
+        </TouchableOpacity>
+
+        <Modal visible={showDatePicker} transparent animationType="fade">
+          <Pressable style={styles.calendarOverlay} onPress={() => setShowDatePicker(false)}>
+            <Pressable style={styles.calendarPopup}>
+              <Calendar
+                current={date.toISOString().split("T")[0]}
+                maxDate={new Date().toISOString().split("T")[0]}
+                markedDates={{
+                  [date.toISOString().split("T")[0]]: { selected: true, selectedColor: "#6C63FF" },
+                }}
+                onDayPress={(day: { dateString: string }) => {
+                  setDate(new Date(day.dateString + "T00:00:00"));
+                  setShowDatePicker(false);
+                }}
+                theme={{
+                  todayTextColor: "#6C63FF",
+                  arrowColor: "#6C63FF",
+                  textDayFontSize: 14,
+                  textMonthFontSize: 15,
+                  textDayHeaderFontSize: 12,
+                }}
+              />
+            </Pressable>
+          </Pressable>
+        </Modal>
 
         <TextInput
           style={styles.input}
@@ -62,16 +118,19 @@ export default function Today() {
 
         <Text style={styles.moodLabel}>How are you feeling?</Text>
         <View style={styles.moodRow}>
-          {moods.map((m) => (
-            <TouchableOpacity
-              key={m}
-              style={[styles.moodButton, mood === m && styles.moodSelected]}
-              onPress={() => setMood(mood === m ? null : m)}
-            >
-              <Text style={styles.moodEmoji}>{m}</Text>
-            </TouchableOpacity>
+          {moodOptions.map((m) => (
+            <View key={m.emoji} style={styles.moodItem}>
+              <TouchableOpacity
+                style={[styles.moodButton, moods.includes(m.emoji) && styles.moodSelected]}
+                onPress={() => toggleMood(m.emoji)}
+              >
+                <Text style={styles.moodEmoji}>{m.emoji}</Text>
+              </TouchableOpacity>
+              <Text style={styles.moodTooltip}>{m.label}</Text>
+            </View>
           ))}
         </View>
+
 
         <TouchableOpacity
           style={[styles.saveButton, !memory.trim() && styles.saveDisabled]}
@@ -90,6 +149,25 @@ const styles = StyleSheet.create({
   content: { padding: 24, paddingTop: 16 },
   heading: { fontSize: 26, fontWeight: "bold", color: "#1a1a1a" },
   date: { fontSize: 14, color: "#888", marginTop: 4, marginBottom: 24 },
+  changeDate: { color: "#6C63FF", fontWeight: "600" },
+  calendarOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 40,
+  },
+  calendarPopup: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 8,
+    width: 300,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+  },
   input: {
     borderWidth: 1,
     borderColor: "#e0e0e0",
@@ -101,6 +179,7 @@ const styles = StyleSheet.create({
   },
   moodLabel: { fontSize: 16, fontWeight: "600", marginTop: 24, marginBottom: 12 },
   moodRow: { flexDirection: "row", gap: 12 },
+  moodItem: { alignItems: "center" },
   moodButton: {
     width: 48,
     height: 48,
@@ -111,6 +190,7 @@ const styles = StyleSheet.create({
   },
   moodSelected: { backgroundColor: "#e8e5ff", borderWidth: 2, borderColor: "#6C63FF" },
   moodEmoji: { fontSize: 24 },
+  moodTooltip: { fontSize: 11, color: "#888", marginTop: 4 },
   saveButton: {
     backgroundColor: "#6C63FF",
     padding: 16,
