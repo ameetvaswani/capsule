@@ -28,10 +28,14 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
 
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-  });
+  const googleClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+  const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest(
+    googleClientId
+      ? { webClientId: googleClientId, iosClientId: iosClientId ?? undefined }
+      : { webClientId: "" }
+  );
 
   useEffect(() => {
     if (response?.type === "success") {
@@ -44,6 +48,10 @@ export default function Login() {
   }, [response]);
 
   const handleGoogleSignIn = () => {
+    if (!googleClientId) {
+      Alert.alert("Error", "Google sign-in is not configured");
+      return;
+    }
     promptAsync();
   };
 
