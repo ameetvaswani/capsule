@@ -20,7 +20,7 @@ interface ChatRequest {
 }
 
 export const generateRecap = onCall(
-  { secrets: [anthropicApiKey] },
+  { secrets: [anthropicApiKey], invoker: "public" },
   async (request) => {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Must be signed in.");
@@ -76,7 +76,7 @@ ${memoriesText}`,
 );
 
 export const chatWithMemories = onCall(
-  { secrets: [anthropicApiKey] },
+  { secrets: [anthropicApiKey], invoker: "public" },
   async (request) => {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Must be signed in.");
