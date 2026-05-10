@@ -29,6 +29,13 @@
     "scheme": "capsule",
     "plugins": [
       "expo-router"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "f06a7bdc-d1cf-46f4-a4c8-a9ba57cd53ee"
+      }
+    },
+    "owner": "ameetvaswani"
   }
 }
