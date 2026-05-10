@@ -26,7 +26,7 @@ import {
   type ChatMessage,
 } from "../../lib/ai";
 
-type RecapPeriod = "week" | "month";
+type RecapPeriod = "week" | "month" | "all";
 
 export default function Recaps() {
   const { user } = useAuth();
@@ -44,21 +44,29 @@ export default function Recaps() {
   const fetchMemories = async () => {
     if (!user) return [];
 
-    const now = new Date();
-    const startDate = new Date();
-    if (period === "week") {
-      startDate.setDate(now.getDate() - 7);
+    let q;
+    if (period === "all") {
+      q = query(
+        collection(db, "users", user.uid, "memories"),
+        orderBy("date", "asc")
+      );
     } else {
-      startDate.setMonth(now.getMonth() - 1);
+      const now = new Date();
+      const startDate = new Date();
+      if (period === "week") {
+        startDate.setDate(now.getDate() - 7);
+      } else {
+        startDate.setMonth(now.getMonth() - 1);
+      }
+
+      const startStr = startDate.toISOString().split("T")[0];
+
+      q = query(
+        collection(db, "users", user.uid, "memories"),
+        where("date", ">=", startStr),
+        orderBy("date", "asc")
+      );
     }
-
-    const startStr = startDate.toISOString().split("T")[0];
-
-    const q = query(
-      collection(db, "users", user.uid, "memories"),
-      where("date", ">=", startStr),
-      orderBy("date", "asc")
-    );
 
     const snap = await getDocs(q);
     return snap.docs.map((doc) => {
@@ -168,6 +176,14 @@ export default function Recaps() {
               >
                 <Text style={[styles.periodText, period === "month" && styles.periodTextActive]}>
                   This Month
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.periodButton, period === "all" && styles.periodActive]}
+                onPress={() => setPeriod("all")}
+              >
+                <Text style={[styles.periodText, period === "all" && styles.periodTextActive]}>
+                  All Time
                 </Text>
               </TouchableOpacity>
             </View>

@@ -13,7 +13,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ameetvaswani.capsule"
     },
     "android": {
       "adaptiveIcon": {
@@ -28,7 +29,8 @@
     },
     "scheme": "capsule",
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-web-browser"
     ],
     "extra": {
       "router": {},

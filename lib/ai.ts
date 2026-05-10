@@ -14,7 +14,7 @@ export type ChatMessage = {
 
 export async function generateRecapSummary(
   memories: Memory[],
-  period: "week" | "month"
+  period: "week" | "month" | "all"
 ): Promise<string> {
   const fn = httpsCallable<
     { memories: Memory[]; period: string },

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,18 +8,44 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from "react-native";
 import { router } from "expo-router";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithCredential,
 } from "firebase/auth";
+import * as Google from "expo-auth-session/providers/google";
+import * as WebBrowser from "expo-web-browser";
 import { auth } from "../lib/firebase";
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
+
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
+    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+  });
+
+  useEffect(() => {
+    if (response?.type === "success") {
+      const { id_token } = response.params;
+      const credential = GoogleAuthProvider.credential(id_token);
+      signInWithCredential(auth, credential)
+        .then(() => router.replace("/(tabs)/today"))
+        .catch((e) => Alert.alert("Error", e.message));
+    }
+  }, [response]);
+
+  const handleGoogleSignIn = () => {
+    promptAsync();
+  };
 
   const handleSubmit = async () => {
     try {
@@ -40,14 +66,25 @@ export default function Login() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View style={styles.logoContainer}>
-        <View style={styles.logoCircle}>
-          <Text style={styles.logoIcon}>💊</Text>
-        </View>
+        <Image
+          source={require("../assets/icon.png")}
+          style={styles.logoImage}
+        />
         <Text style={styles.brand}>Capsule</Text>
         <Text style={styles.tagline}>Your memories, treasured</Text>
       </View>
 
       <Text style={styles.title}>{isSignUp ? "Create your account" : "Welcome back"}</Text>
+
+      <TouchableOpacity style={styles.googleButton} onPress={handleGoogleSignIn}>
+        <Text style={styles.googleButtonText}>Continue with Google</Text>
+      </TouchableOpacity>
+
+      <View style={styles.divider}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerText}>or</Text>
+        <View style={styles.dividerLine} />
+      </View>
 
       <View style={styles.inputContainer}>
         <TextInput
@@ -94,16 +131,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#FAFBFF",
   },
   logoContainer: { alignItems: "center", marginBottom: 40 },
-  logoCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: "#EDE9FF",
-    justifyContent: "center",
-    alignItems: "center",
+  logoImage: {
+    width: 88,
+    height: 88,
+    borderRadius: 20,
     marginBottom: 16,
   },
-  logoIcon: { fontSize: 32 },
   brand: {
     fontSize: 34,
     fontWeight: "800",
@@ -117,6 +150,25 @@ const styles = StyleSheet.create({
     color: "#1a1a2e",
     marginBottom: 24,
   },
+  googleButton: {
+    backgroundColor: "#fff",
+    padding: 16,
+    borderRadius: 14,
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderColor: "#EDEDF5",
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 10,
+  },
+  googleButtonText: { fontSize: 16, fontWeight: "600", color: "#1a1a2e" },
+  divider: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 20,
+  },
+  dividerLine: { flex: 1, height: 1, backgroundColor: "#EDEDF5" },
+  dividerText: { paddingHorizontal: 14, fontSize: 13, color: "#8E8EA0" },
   inputContainer: { gap: 14 },
   input: {
     backgroundColor: "#fff",
