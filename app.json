@@ -15,8 +15,10 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.ameetvaswani.capsule",
+      "buildNumber": "2",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSFaceIDUsageDescription": "Capsule uses Face ID to protect your memories"
       }
     },
     "android": {
@@ -34,7 +36,8 @@
     "plugins": [
       "expo-router",
       "expo-web-browser",
-      "expo-font"
+      "expo-font",
+      "expo-secure-store"
     ],
     "extra": {
       "router": {},

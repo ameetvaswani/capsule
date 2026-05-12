@@ -8,6 +8,7 @@ import {
   Alert,
   ScrollView,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
   Modal,
   Pressable,
@@ -66,7 +67,7 @@ export default function Today() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
         <Text style={styles.heading}>
           {isToday(date) ? "What happened today?" : "A memory from the past"}
         </Text>
@@ -118,7 +119,13 @@ export default function Today() {
             placeholderTextColor="#B0B0C0"
             multiline
             textAlignVertical="top"
+            autoCorrect={true}
+            spellCheck={true}
+            autoCapitalize="sentences"
           />
+          <TouchableOpacity style={styles.dismissKeyboard} onPress={() => Keyboard.dismiss()}>
+            <Text style={styles.dismissKeyboardText}>Done</Text>
+          </TouchableOpacity>
         </View>
 
         <Text style={styles.moodLabel}>How are you feeling?</Text>
@@ -195,11 +202,24 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 16,
     padding: 4,
+    paddingBottom: 0,
     shadowColor: "#6C63FF",
     shadowOpacity: 0.06,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
     elevation: 3,
+  },
+  dismissKeyboard: {
+    alignSelf: "flex-end",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  dismissKeyboardText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#6C63FF",
   },
   input: {
     padding: 16,
