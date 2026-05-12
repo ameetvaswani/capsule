@@ -480,7 +480,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   subtitle: { fontSize: 14, color: "#8E8EA0", marginTop: 4, marginBottom: 24 },
-  periodRow: { flexDirection: "row", gap: 10, marginBottom: 20 },
+  periodRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 20 },
   periodButton: {
     paddingHorizontal: 22,
     paddingVertical: 11,
