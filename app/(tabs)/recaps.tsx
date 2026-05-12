@@ -238,47 +238,49 @@ export default function Recaps() {
               />
             </View>
 
-            <View style={styles.filterRow}>
-            <TouchableOpacity
-              style={[
-                styles.categoryButton,
-                categoryFilter === "All" && styles.categoryButtonAll,
-                categoryFilter === "Personal" && styles.categoryButtonPersonal,
-                categoryFilter === "Professional" && styles.categoryButtonPro,
-              ]}
-              onPress={() => {
-                const next = categoryFilter === "All" ? "Personal" : categoryFilter === "Personal" ? "Professional" : "All";
-                setCategoryFilter(next);
-              }}
-            >
-              <Text style={[
-                styles.categoryButtonText,
-                categoryFilter === "All" && styles.categoryButtonTextAll,
-                categoryFilter === "Personal" && styles.categoryButtonTextPersonal,
-                categoryFilter === "Professional" && styles.categoryButtonTextPro,
-              ]}>
-                {categoryFilter === "All" ? "📋 Personal and Professional" : categoryFilter === "Personal" ? "🏠 Personal" : "💼 Professional"}
-              </Text>
-              <Text style={[
-                styles.categoryButtonArrow,
-                categoryFilter === "All" && styles.categoryButtonTextAll,
-                categoryFilter === "Personal" && styles.categoryButtonTextPersonal,
-                categoryFilter === "Professional" && styles.categoryButtonTextPro,
-              ]}>⇄</Text>
-            </TouchableOpacity>
+            <View style={styles.filterSection}>
+              <TouchableOpacity
+                style={[
+                  styles.categoryButton,
+                  categoryFilter === "All" && styles.categoryButtonAll,
+                  categoryFilter === "Personal" && styles.categoryButtonPersonal,
+                  categoryFilter === "Professional" && styles.categoryButtonPro,
+                ]}
+                onPress={() => {
+                  const next = categoryFilter === "All" ? "Personal" : categoryFilter === "Personal" ? "Professional" : "All";
+                  setCategoryFilter(next);
+                }}
+              >
+                <Text style={[
+                  styles.categoryButtonText,
+                  categoryFilter === "All" && styles.categoryButtonTextAll,
+                  categoryFilter === "Personal" && styles.categoryButtonTextPersonal,
+                  categoryFilter === "Professional" && styles.categoryButtonTextPro,
+                ]}>
+                  {categoryFilter === "All" ? "📋 Personal and Professional" : categoryFilter === "Personal" ? "🏠 Personal" : "💼 Professional"}
+                </Text>
+                <Text style={[
+                  styles.categoryButtonArrow,
+                  categoryFilter === "All" && styles.categoryButtonTextAll,
+                  categoryFilter === "Personal" && styles.categoryButtonTextPersonal,
+                  categoryFilter === "Professional" && styles.categoryButtonTextPro,
+                ]}>⇄</Text>
+              </TouchableOpacity>
+            </View>
 
-            <TouchableOpacity
-              style={[styles.categoryButton, styles.categoryButtonAll]}
-              onPress={() => {
-                const next = period === "week" ? "month" : period === "month" ? "year" : period === "year" ? "all" : period === "all" ? "custom" : "week";
-                setPeriod(next);
-              }}
-            >
-              <Text style={[styles.categoryButtonText, styles.categoryButtonTextAll]}>
-                {period === "week" ? "📅 This Week" : period === "month" ? "📅 This Month" : period === "year" ? "📅 This Year" : period === "all" ? "📅 All Time" : "📅 Custom"}
-              </Text>
-              <Text style={[styles.categoryButtonArrow, styles.categoryButtonTextAll]}>⇄</Text>
-            </TouchableOpacity>
+            <View style={styles.filterSection}>
+              <TouchableOpacity
+                style={[styles.categoryButton, styles.categoryButtonAll]}
+                onPress={() => {
+                  const next = period === "week" ? "month" : period === "month" ? "year" : period === "year" ? "all" : period === "all" ? "custom" : "week";
+                  setPeriod(next);
+                }}
+              >
+                <Text style={[styles.categoryButtonText, styles.categoryButtonTextAll]}>
+                  {period === "week" ? "📅 This Week" : period === "month" ? "📅 This Month" : period === "year" ? "📅 This Year" : period === "all" ? "📅 All Time" : "📅 Custom Time Range"}
+                </Text>
+                <Text style={[styles.categoryButtonArrow, styles.categoryButtonTextAll]}>⇄</Text>
+              </TouchableOpacity>
             </View>
 
             {period === "custom" && (
@@ -471,7 +473,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   subtitle: { fontSize: 14, color: "#8E8EA0", marginTop: 4, marginBottom: 24 },
-  filterRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 20 },
+  filterSection: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
   generateButton: {
     backgroundColor: "#1a1a2e",
     padding: 16,
