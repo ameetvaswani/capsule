@@ -11,6 +11,7 @@ import {
   Switch,
   Platform,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import {
   collection,
@@ -18,9 +19,11 @@ import {
   orderBy,
   onSnapshot,
   limit,
+  startAfter,
   doc,
   updateDoc,
   deleteDoc,
+  QueryDocumentSnapshot,
 } from "firebase/firestore";
 import * as LocalAuthentication from "expo-local-authentication";
 import { db } from "../../lib/firebase";
@@ -36,9 +39,14 @@ type Memory = {
   createdAt: any;
 };
 
+const PAGE_SIZE = 10;
+
 export default function Timeline() {
   const { user } = useAuth();
   const [memories, setMemories] = useState<Memory[]>([]);
+  const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [editing, setEditing] = useState<Memory | null>(null);
   const [editText, setEditText] = useState("");
   const [deleting, setDeleting] = useState<Memory | null>(null);
@@ -95,15 +103,36 @@ export default function Timeline() {
     const q = query(
       collection(db, "users", user.uid, "memories"),
       orderBy("date", "desc"),
-      limit(50)
+      limit(PAGE_SIZE)
     );
 
     return onSnapshot(q, (snap) => {
       setMemories(
         snap.docs.map((d) => ({ id: d.id, ...d.data() } as Memory))
       );
+      setLastDoc(snap.docs[snap.docs.length - 1] ?? null);
+      setHasMore(snap.docs.length === PAGE_SIZE);
     });
   }, [user]);
+
+  const loadMore = async () => {
+    if (!user || !lastDoc || !hasMore || loadingMore) return;
+    setLoadingMore(true);
+
+    const q = query(
+      collection(db, "users", user.uid, "memories"),
+      orderBy("date", "desc"),
+      startAfter(lastDoc),
+      limit(PAGE_SIZE)
+    );
+
+    const snap = await (await import("firebase/firestore")).getDocs(q);
+    const newMemories = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Memory));
+    setMemories((prev) => [...prev, ...newMemories]);
+    setLastDoc(snap.docs[snap.docs.length - 1] ?? null);
+    setHasMore(snap.docs.length === PAGE_SIZE);
+    setLoadingMore(false);
+  };
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr + "T00:00:00");
@@ -162,6 +191,13 @@ export default function Timeline() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.3}
+          ListFooterComponent={
+            loadingMore ? (
+              <ActivityIndicator size="small" color="#6C63FF" style={{ marginVertical: 16 }} />
+            ) : null
+          }
           renderItem={({ item }) => (
             <View style={styles.card}>
               <View style={styles.cardHeader}>

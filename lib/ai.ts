@@ -27,7 +27,7 @@ export async function categorizeMemory(
 
 export async function generateRecapSummary(
   memories: Memory[],
-  period: "week" | "month" | "all" | "custom"
+  period: "week" | "month" | "year" | "all" | "custom"
 ): Promise<string> {
   const fn = httpsCallable<
     { memories: Memory[]; period: string },

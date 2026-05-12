@@ -32,7 +32,7 @@ import {
   type ChatMessage,
 } from "../../lib/ai";
 
-type RecapPeriod = "week" | "month" | "all" | "custom";
+type RecapPeriod = "week" | "month" | "year" | "all" | "custom";
 type CategoryFilter = "All" | "Personal" | "Professional";
 
 export default function Recaps() {
@@ -92,6 +92,17 @@ export default function Recaps() {
     if (period === "all") {
       q = query(
         collection(db, "users", user.uid, "memories"),
+        orderBy("date", "asc")
+      );
+    } else if (period === "year") {
+      const now = new Date();
+      const startDate = new Date();
+      startDate.setFullYear(now.getFullYear() - 1);
+      const startStr = startDate.toISOString().split("T")[0];
+
+      q = query(
+        collection(db, "users", user.uid, "memories"),
+        where("date", ">=", startStr),
         orderBy("date", "asc")
       );
     } else if (period === "custom") {
@@ -227,6 +238,7 @@ export default function Recaps() {
               />
             </View>
 
+            <View style={styles.filterRow}>
             <TouchableOpacity
               style={[
                 styles.categoryButton,
@@ -255,39 +267,18 @@ export default function Recaps() {
               ]}>⇄</Text>
             </TouchableOpacity>
 
-            <View style={styles.periodRow}>
-              <TouchableOpacity
-                style={[styles.periodButton, period === "week" && styles.periodActive]}
-                onPress={() => setPeriod("week")}
-              >
-                <Text style={[styles.periodText, period === "week" && styles.periodTextActive]}>
-                  This Week
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.periodButton, period === "month" && styles.periodActive]}
-                onPress={() => setPeriod("month")}
-              >
-                <Text style={[styles.periodText, period === "month" && styles.periodTextActive]}>
-                  This Month
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.periodButton, period === "all" && styles.periodActive]}
-                onPress={() => setPeriod("all")}
-              >
-                <Text style={[styles.periodText, period === "all" && styles.periodTextActive]}>
-                  All Time
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.periodButton, period === "custom" && styles.periodActive]}
-                onPress={() => setPeriod("custom")}
-              >
-                <Text style={[styles.periodText, period === "custom" && styles.periodTextActive]}>
-                  Custom
-                </Text>
-              </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.categoryButton, styles.categoryButtonAll]}
+              onPress={() => {
+                const next = period === "week" ? "month" : period === "month" ? "year" : period === "year" ? "all" : period === "all" ? "custom" : "week";
+                setPeriod(next);
+              }}
+            >
+              <Text style={[styles.categoryButtonText, styles.categoryButtonTextAll]}>
+                {period === "week" ? "📅 This Week" : period === "month" ? "📅 This Month" : period === "year" ? "📅 This Year" : period === "all" ? "📅 All Time" : "📅 Custom"}
+              </Text>
+              <Text style={[styles.categoryButtonArrow, styles.categoryButtonTextAll]}>⇄</Text>
+            </TouchableOpacity>
             </View>
 
             {period === "custom" && (
@@ -480,23 +471,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   subtitle: { fontSize: 14, color: "#8E8EA0", marginTop: 4, marginBottom: 24 },
-  periodRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 20 },
-  periodButton: {
-    paddingHorizontal: 22,
-    paddingVertical: 11,
-    borderRadius: 24,
-    backgroundColor: "#F3F2FA",
-  },
-  periodActive: {
-    backgroundColor: "#6C63FF",
-    shadowColor: "#6C63FF",
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
-  },
-  periodText: { fontSize: 14, fontWeight: "600", color: "#8E8EA0" },
-  periodTextActive: { color: "#fff" },
+  filterRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 20 },
   generateButton: {
     backgroundColor: "#1a1a2e",
     padding: 16,
