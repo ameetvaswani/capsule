@@ -8,6 +8,9 @@ import {
   StyleSheet,
   Modal,
   Pressable,
+  Switch,
+  Platform,
+  Alert,
 } from "react-native";
 import {
   collection,
@@ -19,6 +22,7 @@ import {
   updateDoc,
   deleteDoc,
 } from "firebase/firestore";
+import * as LocalAuthentication from "expo-local-authentication";
 import { db } from "../../lib/firebase";
 import { useAuth } from "../../lib/auth-context";
 
@@ -26,6 +30,8 @@ type Memory = {
   id: string;
   text: string;
   mood: string | null;
+  category: string | null;
+  isPrivate: boolean;
   date: string;
   createdAt: any;
 };
@@ -36,13 +42,59 @@ export default function Timeline() {
   const [editing, setEditing] = useState<Memory | null>(null);
   const [editText, setEditText] = useState("");
   const [deleting, setDeleting] = useState<Memory | null>(null);
+  const [showPrivate, setShowPrivate] = useState(false);
+
+  const updateCategory = async (memoryId: string, category: string) => {
+    if (!user) return;
+    await updateDoc(doc(db, "users", user.uid, "memories", memoryId), { category });
+  };
+
+  const togglePrivate = async (memoryId: string, current: boolean) => {
+    if (!user) return;
+    await updateDoc(doc(db, "users", user.uid, "memories", memoryId), { isPrivate: !current });
+  };
+
+  const handleShowPrivateToggle = async (value: boolean) => {
+    if (!value) {
+      setShowPrivate(false);
+      return;
+    }
+
+    if (Platform.OS === "web") {
+      setShowPrivate(true);
+      return;
+    }
+
+    const hasHardware = await LocalAuthentication.hasHardwareAsync();
+    const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+
+    if (!hasHardware || !isEnrolled) {
+      setShowPrivate(true);
+      return;
+    }
+
+    const result = await LocalAuthentication.authenticateAsync({
+      promptMessage: "Authenticate to view private memories",
+      fallbackLabel: "Use passcode",
+    });
+
+    if (result.success) {
+      setShowPrivate(true);
+    } else {
+      Alert.alert("Authentication required", "Face ID is needed to view private memories.");
+    }
+  };
+
+  const filteredMemories = showPrivate
+    ? memories
+    : memories.filter((m) => !m.isPrivate);
 
   useEffect(() => {
     if (!user) return;
 
     const q = query(
       collection(db, "users", user.uid, "memories"),
-      orderBy("createdAt", "desc"),
+      orderBy("date", "desc"),
       limit(50)
     );
 
@@ -95,7 +147,18 @@ export default function Timeline() {
         </View>
       ) : (
         <FlatList
-          data={memories}
+          data={filteredMemories}
+          ListHeaderComponent={
+            <View style={styles.toggleRow}>
+              <Text style={styles.toggleLabel}>Show private memories</Text>
+              <Switch
+                value={showPrivate}
+                onValueChange={handleShowPrivateToggle}
+                trackColor={{ true: "#6C63FF", false: "#E0E0E0" }}
+                thumbColor="#fff"
+              />
+            </View>
+          }
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
@@ -105,15 +168,38 @@ export default function Timeline() {
                 <View style={styles.dateBadge}>
                   <Text style={styles.cardDate}>{formatDate(item.date)}</Text>
                 </View>
+                <TouchableOpacity
+                  style={[
+                    styles.categoryButton,
+                    (item.category || "Personal") === "Professional" ? styles.categoryButtonPro : styles.categoryButtonPersonal,
+                  ]}
+                  onPress={() => updateCategory(item.id, (item.category || "Personal") === "Personal" ? "Professional" : "Personal")}
+                >
+                  <Text style={[
+                    styles.categoryButtonText,
+                    (item.category || "Personal") === "Professional" ? styles.categoryButtonTextPro : styles.categoryButtonTextPersonal,
+                  ]}>
+                    {(item.category || "Personal") === "Professional" ? "💼 Professional" : "🏠 Personal"}
+                  </Text>
+                  <Text style={[
+                    styles.categoryButtonArrow,
+                    (item.category || "Personal") === "Professional" ? styles.categoryButtonTextPro : styles.categoryButtonTextPersonal,
+                  ]}>⇄</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.cardTextRow}>
+                <Text style={styles.cardText}>{item.text}</Text>
                 {item.mood && <Text style={styles.cardMood}>{item.mood}</Text>}
               </View>
-              <Text style={styles.cardText}>{item.text}</Text>
               <View style={styles.cardActions}>
                 <TouchableOpacity style={styles.actionButton} onPress={() => handleEdit(item)}>
                   <Text style={styles.editAction}>Edit</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.actionButton} onPress={() => setDeleting(item)}>
                   <Text style={styles.deleteAction}>Delete</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.actionButton} onPress={() => togglePrivate(item.id, !!item.isPrivate)}>
+                  <Text style={styles.privateAction}>{item.isPrivate ? "Make Public" : "Make Private"}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -181,6 +267,14 @@ const styles = StyleSheet.create({
   emptyIcon: { marginBottom: 16 },
   emptyText: { fontSize: 20, fontWeight: "700", color: "#1a1a2e" },
   emptySubtext: { fontSize: 15, color: "#8E8EA0", marginTop: 8, textAlign: "center" },
+  toggleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+    marginBottom: 8,
+  },
+  toggleLabel: { fontSize: 14, fontWeight: "600", color: "#8E8EA0" },
   list: { padding: 16, paddingBottom: 32 },
   card: {
     backgroundColor: "#fff",
@@ -194,6 +288,29 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
+  categoryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+  categoryButtonPersonal: {
+    backgroundColor: "#F3F0FF",
+  },
+  categoryButtonPro: {
+    backgroundColor: "#EEFBF3",
+  },
+  categoryButtonText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  categoryButtonTextPersonal: { color: "#6C63FF" },
+  categoryButtonTextPro: { color: "#2E8B57" },
+  categoryButtonArrow: {
+    fontSize: 11,
+  },
   dateBadge: {
     backgroundColor: "#F3F2FA",
     paddingHorizontal: 10,
@@ -201,8 +318,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   cardDate: { fontSize: 12, color: "#6C63FF", fontWeight: "600" },
-  cardMood: { fontSize: 20 },
-  cardText: { fontSize: 15, lineHeight: 23, color: "#2D2D3A" },
+  cardTextRow: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
+  cardText: { flex: 1, fontSize: 15, lineHeight: 23, color: "#2D2D3A" },
+  cardMood: { fontSize: 20, marginTop: 2 },
   cardActions: {
     flexDirection: "row",
     gap: 8,
@@ -213,6 +331,7 @@ const styles = StyleSheet.create({
   },
   actionButton: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   editAction: { fontSize: 13, color: "#6C63FF", fontWeight: "700" },
+  privateAction: { fontSize: 13, color: "#8E8EA0", fontWeight: "700" },
   deleteAction: { fontSize: 13, color: "#E54D4D", fontWeight: "700" },
   modalOverlay: {
     flex: 1,

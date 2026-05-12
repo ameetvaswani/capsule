@@ -14,9 +14,10 @@ import {
   Pressable,
 } from "react-native";
 import { Calendar } from "react-native-calendars";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { addDoc, collection, query, orderBy, limit, getDocs, doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useAuth } from "../../lib/auth-context";
+import { categorizeMemory } from "../../lib/ai";
 
 function isToday(d: Date) {
   const now = new Date();
@@ -48,9 +49,12 @@ export default function Today() {
   const saveMemory = async () => {
     if (!memory.trim() || !user) return;
 
-    await addDoc(collection(db, "users", user.uid, "memories"), {
-      text: memory.trim(),
+    const text = memory.trim();
+
+    const docRef = await addDoc(collection(db, "users", user.uid, "memories"), {
+      text,
       mood: moods.length > 0 ? moods.join(" ") : null,
+      category: null,
       createdAt: serverTimestamp(),
       date: date.toISOString().split("T")[0],
     });
@@ -60,6 +64,24 @@ export default function Today() {
     setDate(new Date());
     setShowDatePicker(false);
     Alert.alert("Saved", "Your memory has been captured");
+
+    // Categorize in background
+    try {
+      const recentQ = query(
+        collection(db, "users", user.uid, "memories"),
+        orderBy("createdAt", "desc"),
+        limit(10)
+      );
+      const snap = await getDocs(recentQ);
+      const recentMemories = snap.docs
+        .filter((d) => d.data().category)
+        .map((d) => ({ text: d.data().text, category: d.data().category }));
+
+      const category = await categorizeMemory(text, recentMemories);
+      await updateDoc(doc(db, "users", user.uid, "memories", docRef.id), { category });
+    } catch (_) {
+      // Categorization is best-effort
+    }
   };
 
   return (

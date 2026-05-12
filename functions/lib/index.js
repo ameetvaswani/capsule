@@ -1,9 +1,47 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.chatWithMemories = exports.generateRecap = void 0;
+exports.chatWithMemories = exports.generateRecap = exports.categorizeMemory = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const params_1 = require("firebase-functions/params");
 const anthropicApiKey = (0, params_1.defineSecret)("ANTHROPIC_API_KEY");
+exports.categorizeMemory = (0, https_1.onCall)({ secrets: [anthropicApiKey], invoker: "public" }, async (request) => {
+    if (!request.auth) {
+        throw new https_1.HttpsError("unauthenticated", "Must be signed in.");
+    }
+    const { text, recentMemories } = request.data;
+    if (!text) {
+        throw new https_1.HttpsError("invalid-argument", "No text provided.");
+    }
+    const examples = recentMemories.length > 0
+        ? `\n\nHere are some previously categorized memories for context:\n${recentMemories.map((m) => `- "${m.text}" → ${m.category}`).join("\n")}`
+        : "";
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "x-api-key": anthropicApiKey.value(),
+            "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+            model: "claude-haiku-4-5-20251001",
+            max_tokens: 20,
+            messages: [
+                {
+                    role: "user",
+                    content: `Categorize this memory as either "Personal" or "Professional". Respond with only one word — either "Personal" or "Professional".${examples}\n\nMemory: "${text}"`,
+                },
+            ],
+        }),
+    });
+    if (!response.ok) {
+        const error = await response.text();
+        throw new https_1.HttpsError("internal", `Claude API error: ${error}`);
+    }
+    const data = await response.json();
+    const raw = data.content[0].text.trim();
+    const category = raw.includes("Professional") ? "Professional" : "Personal";
+    return { category };
+});
 exports.generateRecap = (0, https_1.onCall)({ secrets: [anthropicApiKey], invoker: "public" }, async (request) => {
     if (!request.auth) {
         throw new https_1.HttpsError("unauthenticated", "Must be signed in.");

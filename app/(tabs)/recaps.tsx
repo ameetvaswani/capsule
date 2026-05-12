@@ -9,6 +9,10 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Switch,
+  Modal,
+  Pressable,
+  Alert,
 } from "react-native";
 import {
   collection,
@@ -17,6 +21,8 @@ import {
   orderBy,
   getDocs,
 } from "firebase/firestore";
+import { Calendar } from "react-native-calendars";
+import * as LocalAuthentication from "expo-local-authentication";
 import { db } from "../../lib/firebase";
 import { useAuth } from "../../lib/auth-context";
 import {
@@ -26,13 +32,20 @@ import {
   type ChatMessage,
 } from "../../lib/ai";
 
-type RecapPeriod = "week" | "month" | "all";
+type RecapPeriod = "week" | "month" | "all" | "custom";
+type CategoryFilter = "All" | "Personal" | "Professional";
 
 export default function Recaps() {
   const { user } = useAuth();
   const [period, setPeriod] = useState<RecapPeriod>("week");
   const [recap, setRecap] = useState<string | null>(null);
   const [recapLoading, setRecapLoading] = useState(false);
+  const [includePrivate, setIncludePrivate] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("All");
+  const [customStart, setCustomStart] = useState<string | null>(null);
+  const [customEnd, setCustomEnd] = useState<string | null>(null);
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
 
   const [memories, setMemories] = useState<Memory[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -41,6 +54,37 @@ export default function Recaps() {
   const [error, setError] = useState<string | null>(null);
   const flatListRef = useRef<FlatList>(null);
 
+  const handleIncludePrivateToggle = async (value: boolean) => {
+    if (!value) {
+      setIncludePrivate(false);
+      return;
+    }
+
+    if (Platform.OS === "web") {
+      setIncludePrivate(true);
+      return;
+    }
+
+    const hasHardware = await LocalAuthentication.hasHardwareAsync();
+    const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+
+    if (!hasHardware || !isEnrolled) {
+      setIncludePrivate(true);
+      return;
+    }
+
+    const result = await LocalAuthentication.authenticateAsync({
+      promptMessage: "Authenticate to include private memories",
+      fallbackLabel: "Use passcode",
+    });
+
+    if (result.success) {
+      setIncludePrivate(true);
+    } else {
+      Alert.alert("Authentication required", "Face ID is needed to include private memories.");
+    }
+  };
+
   const fetchMemories = async () => {
     if (!user) return [];
 
@@ -48,6 +92,14 @@ export default function Recaps() {
     if (period === "all") {
       q = query(
         collection(db, "users", user.uid, "memories"),
+        orderBy("date", "asc")
+      );
+    } else if (period === "custom") {
+      if (!customStart || !customEnd) return [];
+      q = query(
+        collection(db, "users", user.uid, "memories"),
+        where("date", ">=", customStart),
+        where("date", "<=", customEnd),
         orderBy("date", "asc")
       );
     } else {
@@ -69,10 +121,14 @@ export default function Recaps() {
     }
 
     const snap = await getDocs(q);
-    return snap.docs.map((doc) => {
-      const d = doc.data();
-      return { text: d.text, mood: d.mood ?? null, date: d.date };
-    });
+    return snap.docs
+      .map((doc) => {
+        const d = doc.data();
+        return { text: d.text, mood: d.mood ?? null, date: d.date, isPrivate: !!d.isPrivate, category: d.category ?? null };
+      })
+      .filter((m) => includePrivate || !m.isPrivate)
+      .filter((m) => categoryFilter === "All" || m.category === categoryFilter)
+      .map(({ text, mood, date }) => ({ text, mood, date }));
   };
 
   const generateRecap = async () => {
@@ -139,7 +195,7 @@ export default function Recaps() {
     setMemories([]);
     setMessages([]);
     setRecap(null);
-  }, [period]);
+  }, [period, includePrivate, categoryFilter]);
 
   return (
     <KeyboardAvoidingView
@@ -160,6 +216,44 @@ export default function Recaps() {
             <Text style={styles.subtitle}>
               Look back on your memories, summarized
             </Text>
+
+            <View style={styles.privateToggleRow}>
+              <Text style={styles.privateToggleLabel}>Include private memories</Text>
+              <Switch
+                value={includePrivate}
+                onValueChange={handleIncludePrivateToggle}
+                trackColor={{ true: "#6C63FF", false: "#E0E0E0" }}
+                thumbColor="#fff"
+              />
+            </View>
+
+            <TouchableOpacity
+              style={[
+                styles.categoryButton,
+                categoryFilter === "All" && styles.categoryButtonAll,
+                categoryFilter === "Personal" && styles.categoryButtonPersonal,
+                categoryFilter === "Professional" && styles.categoryButtonPro,
+              ]}
+              onPress={() => {
+                const next = categoryFilter === "All" ? "Personal" : categoryFilter === "Personal" ? "Professional" : "All";
+                setCategoryFilter(next);
+              }}
+            >
+              <Text style={[
+                styles.categoryButtonText,
+                categoryFilter === "All" && styles.categoryButtonTextAll,
+                categoryFilter === "Personal" && styles.categoryButtonTextPersonal,
+                categoryFilter === "Professional" && styles.categoryButtonTextPro,
+              ]}>
+                {categoryFilter === "All" ? "📋 Personal and Professional" : categoryFilter === "Personal" ? "🏠 Personal" : "💼 Professional"}
+              </Text>
+              <Text style={[
+                styles.categoryButtonArrow,
+                categoryFilter === "All" && styles.categoryButtonTextAll,
+                categoryFilter === "Personal" && styles.categoryButtonTextPersonal,
+                categoryFilter === "Professional" && styles.categoryButtonTextPro,
+              ]}>⇄</Text>
+            </TouchableOpacity>
 
             <View style={styles.periodRow}>
               <TouchableOpacity
@@ -186,7 +280,60 @@ export default function Recaps() {
                   All Time
                 </Text>
               </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.periodButton, period === "custom" && styles.periodActive]}
+                onPress={() => setPeriod("custom")}
+              >
+                <Text style={[styles.periodText, period === "custom" && styles.periodTextActive]}>
+                  Custom
+                </Text>
+              </TouchableOpacity>
             </View>
+
+            {period === "custom" && (
+              <View style={styles.customDateRow}>
+                <TouchableOpacity style={styles.datePickerButton} onPress={() => setShowStartPicker(true)}>
+                  <Text style={styles.datePickerButtonText}>{customStart || "Start date"}</Text>
+                </TouchableOpacity>
+                <Text style={styles.dateSeparator}>to</Text>
+                <TouchableOpacity style={styles.datePickerButton} onPress={() => setShowEndPicker(true)}>
+                  <Text style={styles.datePickerButtonText}>{customEnd || "End date"}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            <Modal visible={showStartPicker} transparent animationType="fade">
+              <Pressable style={styles.calendarOverlay} onPress={() => setShowStartPicker(false)}>
+                <Pressable style={styles.calendarPopup}>
+                  <Calendar
+                    maxDate={customEnd || new Date().toISOString().split("T")[0]}
+                    markedDates={customStart ? { [customStart]: { selected: true, selectedColor: "#6C63FF" } } : {}}
+                    onDayPress={(day: { dateString: string }) => {
+                      setCustomStart(day.dateString);
+                      setShowStartPicker(false);
+                    }}
+                    theme={{ todayTextColor: "#6C63FF", arrowColor: "#6C63FF" }}
+                  />
+                </Pressable>
+              </Pressable>
+            </Modal>
+
+            <Modal visible={showEndPicker} transparent animationType="fade">
+              <Pressable style={styles.calendarOverlay} onPress={() => setShowEndPicker(false)}>
+                <Pressable style={styles.calendarPopup}>
+                  <Calendar
+                    minDate={customStart || undefined}
+                    maxDate={new Date().toISOString().split("T")[0]}
+                    markedDates={customEnd ? { [customEnd]: { selected: true, selectedColor: "#6C63FF" } } : {}}
+                    onDayPress={(day: { dateString: string }) => {
+                      setCustomEnd(day.dateString);
+                      setShowEndPicker(false);
+                    }}
+                    theme={{ todayTextColor: "#6C63FF", arrowColor: "#6C63FF" }}
+                  />
+                </Pressable>
+              </Pressable>
+            </Modal>
 
             <TouchableOpacity style={styles.generateButton} onPress={generateRecap}>
               <Text style={styles.generateText}>Generate Recap</Text>
@@ -266,6 +413,66 @@ export default function Recaps() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FAFBFF" },
   listContent: { padding: 24, paddingBottom: 8 },
+  privateToggleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  privateToggleLabel: { fontSize: 14, fontWeight: "600", color: "#8E8EA0" },
+  categoryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: "#F0F0F5",
+    marginBottom: 20,
+  },
+  categoryButtonAll: { backgroundColor: "#F0F0F5" },
+  categoryButtonPersonal: { backgroundColor: "#F3F0FF" },
+  categoryButtonPro: { backgroundColor: "#EEFBF3" },
+  categoryButtonText: { fontSize: 13, fontWeight: "700", color: "#8E8EA0" },
+  categoryButtonTextAll: { color: "#1a1a2e" },
+  categoryButtonTextPersonal: { color: "#6C63FF" },
+  categoryButtonTextPro: { color: "#2E8B57" },
+  categoryButtonArrow: { fontSize: 11 },
+  customDateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 20,
+  },
+  datePickerButton: {
+    flex: 1,
+    backgroundColor: "#F3F2FA",
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  datePickerButtonText: { fontSize: 14, fontWeight: "600", color: "#6C63FF" },
+  dateSeparator: { fontSize: 14, color: "#8E8EA0" },
+  calendarOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(10,10,30,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 40,
+  },
+  calendarPopup: {
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    padding: 12,
+    width: 310,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 12,
+  },
   heading: {
     fontSize: 28,
     fontWeight: "800",

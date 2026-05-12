@@ -12,9 +12,22 @@ export type ChatMessage = {
   content: string;
 };
 
+export async function categorizeMemory(
+  text: string,
+  recentMemories: { text: string; category: string }[]
+): Promise<"Personal" | "Professional"> {
+  const fn = httpsCallable<
+    { text: string; recentMemories: { text: string; category: string }[] },
+    { category: string }
+  >(functions, "categorizeMemory");
+
+  const result = await fn({ text, recentMemories });
+  return result.data.category as "Personal" | "Professional";
+}
+
 export async function generateRecapSummary(
   memories: Memory[],
-  period: "week" | "month" | "all"
+  period: "week" | "month" | "all" | "custom"
 ): Promise<string> {
   const fn = httpsCallable<
     { memories: Memory[]; period: string },

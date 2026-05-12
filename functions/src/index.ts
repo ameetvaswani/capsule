@@ -9,6 +9,11 @@ interface Memory {
   date: string;
 }
 
+interface CategorizeRequest {
+  text: string;
+  recentMemories: { text: string; category: string }[];
+}
+
 interface RecapRequest {
   memories: Memory[];
   period: "week" | "month";
@@ -18,6 +23,54 @@ interface ChatRequest {
   memories: Memory[];
   messages: { role: "user" | "assistant"; content: string }[];
 }
+
+export const categorizeMemory = onCall(
+  { secrets: [anthropicApiKey], invoker: "public" },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be signed in.");
+    }
+
+    const { text, recentMemories } = request.data as CategorizeRequest;
+
+    if (!text) {
+      throw new HttpsError("invalid-argument", "No text provided.");
+    }
+
+    const examples = recentMemories.length > 0
+      ? `\n\nHere are some previously categorized memories for context:\n${recentMemories.map((m) => `- "${m.text}" → ${m.category}`).join("\n")}`
+      : "";
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": anthropicApiKey.value(),
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 20,
+        messages: [
+          {
+            role: "user",
+            content: `Categorize this memory as either "Personal" or "Professional". Respond with only one word — either "Personal" or "Professional".${examples}\n\nMemory: "${text}"`,
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new HttpsError("internal", `Claude API error: ${error}`);
+    }
+
+    const data = await response.json();
+    const raw = data.content[0].text.trim();
+    const category = raw.includes("Professional") ? "Professional" : "Personal";
+    return { category };
+  }
+);
 
 export const generateRecap = onCall(
   { secrets: [anthropicApiKey], invoker: "public" },
