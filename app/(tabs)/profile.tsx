@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Alert, Modal, Pressable } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Modal, Pressable } from "react-native";
 import { router } from "expo-router";
 import { signOut } from "firebase/auth";
-import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, deleteDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../../lib/firebase";
 import { useAuth } from "../../lib/auth-context";
 
@@ -10,6 +10,8 @@ export default function Profile() {
   const { user } = useAuth();
   const [deleteScheduled, setDeleteScheduled] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [feedback, setFeedback] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -44,6 +46,23 @@ export default function Profile() {
         "Account scheduled for deletion",
         "Your account will be permanently deleted on " + scheduledDate.toLocaleDateString() + ". You can cancel this from your profile before then."
       );
+    } catch (e: any) {
+      Alert.alert("Error", e.message);
+    }
+  };
+
+  const handleSubmitFeedback = async () => {
+    if (!user || !feedback.trim()) return;
+    try {
+      await addDoc(collection(db, "feedback"), {
+        userId: user.uid,
+        email: user.email,
+        text: feedback.trim(),
+        createdAt: serverTimestamp(),
+      });
+      setFeedback("");
+      setShowFeedbackModal(false);
+      Alert.alert("Thank you!", "Your feedback has been submitted.");
     } catch (e: any) {
       Alert.alert("Error", e.message);
     }
@@ -84,6 +103,16 @@ export default function Profile() {
       </View>
 
       <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Support</Text>
+        <View style={styles.menuCard}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => setShowFeedbackModal(true)}>
+            <Text style={styles.menuItemText}>Send Feedback</Text>
+            <Text style={styles.menuItemArrow}>→</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Account</Text>
         <View style={styles.menuCard}>
           <TouchableOpacity style={styles.menuItem} onPress={handleSignOut}>
@@ -97,6 +126,36 @@ export default function Profile() {
           </TouchableOpacity>
         </View>
       </View>
+
+      <Modal visible={showFeedbackModal} transparent animationType="fade">
+        <Pressable style={styles.modalOverlay} onPress={() => setShowFeedbackModal(false)}>
+          <Pressable style={styles.modalContent}>
+            <Text style={styles.modalTitleFeedback}>Send Feedback</Text>
+            <Text style={styles.modalSubtext}>Suggestions, bugs, or just say hi</Text>
+            <TextInput
+              style={styles.feedbackInput}
+              value={feedback}
+              onChangeText={setFeedback}
+              placeholder="What's on your mind?"
+              placeholderTextColor="#A0A0B0"
+              multiline
+              textAlignVertical="top"
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity style={styles.modalCancel} onPress={() => setShowFeedbackModal(false)}>
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.feedbackSubmit, !feedback.trim() && styles.feedbackSubmitDisabled]}
+                onPress={handleSubmitFeedback}
+                disabled={!feedback.trim()}
+              >
+                <Text style={styles.feedbackSubmitText}>Submit</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <Modal visible={showDeleteModal} transparent animationType="fade">
         <Pressable style={styles.modalOverlay} onPress={() => setShowDeleteModal(false)}>
@@ -212,6 +271,27 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 24,
   },
+  modalTitleFeedback: { fontSize: 20, fontWeight: "800", color: "#1a1a2e", marginBottom: 4 },
+  modalSubtext: { fontSize: 14, color: "#8E8EA0", marginBottom: 16 },
+  feedbackInput: {
+    backgroundColor: "#F8F8FC",
+    borderWidth: 1.5,
+    borderColor: "#EDEDF5",
+    borderRadius: 14,
+    padding: 16,
+    fontSize: 16,
+    minHeight: 120,
+    lineHeight: 22,
+    color: "#1a1a2e",
+  },
+  feedbackSubmit: {
+    backgroundColor: "#6C63FF",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  feedbackSubmitDisabled: { opacity: 0.4 },
+  feedbackSubmitText: { color: "#fff", fontSize: 15, fontWeight: "700" },
   modalTitle: { fontSize: 20, fontWeight: "800", color: "#E54D4D", marginBottom: 16 },
   modalBody: { fontSize: 15, color: "#4A4A5A", lineHeight: 22 },
   modalButtons: { flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 24 },

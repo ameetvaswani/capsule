@@ -348,7 +348,7 @@ export default function Recaps() {
                 <Text style={styles.recapText}>{recap}</Text>
                 <TouchableOpacity
                   style={styles.shareButton}
-                  onPress={() => Share.share({ message: recap })}
+                  onPress={() => Share.share({ message: `${recap}\n\n— Shared from Capsule\nhttps://apps.apple.com/app/capsule-daily-memories/id6768098034` })}
                 >
                   <Text style={styles.shareButtonText}>Share Recap</Text>
                 </TouchableOpacity>
