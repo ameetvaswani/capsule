@@ -1,5 +1,11 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { onSchedule } from "firebase-functions/v2/scheduler";
 import { defineSecret } from "firebase-functions/params";
+import { initializeApp } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
+import { getAuth } from "firebase-admin/auth";
+
+initializeApp();
 
 const anthropicApiKey = defineSecret("ANTHROPIC_API_KEY");
 
@@ -172,3 +178,32 @@ ${memoriesText}`,
     return { text: data.content[0].text };
   }
 );
+
+export const deleteExpiredAccounts = onSchedule("every 24 hours", async () => {
+  const firestore = getFirestore();
+  const authAdmin = getAuth();
+
+  const usersSnap = await firestore.collectionGroup("account").where("frozen", "==", true).get();
+
+  for (const accountDoc of usersSnap.docs) {
+    const data = accountDoc.data();
+    const deletionDate = new Date(data.deletionScheduledAt);
+
+    if (deletionDate.getTime() > Date.now()) continue;
+
+    const userId = accountDoc.ref.parent.parent?.id;
+    if (!userId) continue;
+
+    const memoriesSnap = await firestore.collection(`users/${userId}/memories`).get();
+    const batch = firestore.batch();
+    memoriesSnap.docs.forEach((d) => batch.delete(d.ref));
+    batch.delete(accountDoc.ref);
+    await batch.commit();
+
+    try {
+      await authAdmin.deleteUser(userId);
+    } catch (_) {
+      // User may have already been deleted
+    }
+  }
+});

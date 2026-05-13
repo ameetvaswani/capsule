@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated: May 9, 2026**
+**Last updated: May 12, 2026**
 
 ## Overview
 
@@ -30,7 +30,13 @@ Your memories are stored as long as your account is active. You can delete indiv
 
 ## Account Deletion
 
-To delete your account and all associated data, contact us at mrcocotoasty@gmail.com. We will process deletion requests within 30 days.
+You can delete your account directly from the app by going to Profile > Delete Account. Upon requesting deletion:
+
+- Your account will be frozen immediately (no new memories can be added)
+- You have 7 days to cancel the deletion from your Profile
+- After 7 days, your account and all associated data (memories, settings, authentication) will be permanently and irreversibly deleted
+
+You can also request deletion by emailing mrcocotoasty@gmail.com.
 
 ## Security
 

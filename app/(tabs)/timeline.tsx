@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -12,7 +12,9 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Animated,
 } from "react-native";
+import { Swipeable } from "react-native-gesture-handler";
 import {
   collection,
   query,
@@ -199,46 +201,55 @@ export default function Timeline() {
             ) : null
           }
           renderItem={({ item }) => (
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <View style={styles.dateBadge}>
-                  <Text style={styles.cardDate}>{formatDate(item.date)}</Text>
+            <Swipeable
+              renderRightActions={() => (
+                <View style={styles.swipeActions}>
+                  <TouchableOpacity style={styles.swipeButtonEdit} onPress={() => handleEdit(item)}>
+                    <Text style={styles.swipeIcon}>✏️</Text>
+                    <Text style={styles.swipeButtonText}>Edit</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.swipeButtonPrivate} onPress={() => togglePrivate(item.id, !!item.isPrivate)}>
+                    <Text style={styles.swipeIcon}>{item.isPrivate ? "👁️" : "🔒"}</Text>
+                    <Text style={styles.swipeButtonText}>{item.isPrivate ? "Public" : "Private"}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.swipeButtonDelete} onPress={() => setDeleting(item)}>
+                    <Text style={styles.swipeIcon}>🗑️</Text>
+                    <Text style={styles.swipeButtonText}>Delete</Text>
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity
-                  style={[
-                    styles.categoryButton,
-                    (item.category || "Personal") === "Professional" ? styles.categoryButtonPro : styles.categoryButtonPersonal,
-                  ]}
-                  onPress={() => updateCategory(item.id, (item.category || "Personal") === "Personal" ? "Professional" : "Personal")}
-                >
-                  <Text style={[
-                    styles.categoryButtonText,
-                    (item.category || "Personal") === "Professional" ? styles.categoryButtonTextPro : styles.categoryButtonTextPersonal,
-                  ]}>
-                    {(item.category || "Personal") === "Professional" ? "💼 Professional" : "🏠 Personal"}
-                  </Text>
-                  <Text style={[
-                    styles.categoryButtonArrow,
-                    (item.category || "Personal") === "Professional" ? styles.categoryButtonTextPro : styles.categoryButtonTextPersonal,
-                  ]}>⇄</Text>
-                </TouchableOpacity>
+              )}
+              overshootRight={false}
+            >
+              <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <View style={styles.dateBadge}>
+                    <Text style={styles.cardDate}>{formatDate(item.date)}</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={[
+                      styles.categoryButton,
+                      (item.category || "Personal") === "Professional" ? styles.categoryButtonPro : styles.categoryButtonPersonal,
+                    ]}
+                    onPress={() => updateCategory(item.id, (item.category || "Personal") === "Personal" ? "Professional" : "Personal")}
+                  >
+                    <Text style={[
+                      styles.categoryButtonText,
+                      (item.category || "Personal") === "Professional" ? styles.categoryButtonTextPro : styles.categoryButtonTextPersonal,
+                    ]}>
+                      {(item.category || "Personal") === "Professional" ? "💼 Professional" : "🏠 Personal"}
+                    </Text>
+                    <Text style={[
+                      styles.categoryButtonArrow,
+                      (item.category || "Personal") === "Professional" ? styles.categoryButtonTextPro : styles.categoryButtonTextPersonal,
+                    ]}>⇄</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.cardTextRow}>
+                  <Text style={styles.cardText}>{item.text}</Text>
+                  {item.mood && <Text style={styles.cardMood}>{item.mood}</Text>}
+                </View>
               </View>
-              <View style={styles.cardTextRow}>
-                <Text style={styles.cardText}>{item.text}</Text>
-                {item.mood && <Text style={styles.cardMood}>{item.mood}</Text>}
-              </View>
-              <View style={styles.cardActions}>
-                <TouchableOpacity style={styles.actionButton} onPress={() => handleEdit(item)}>
-                  <Text style={styles.editAction}>Edit</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionButton} onPress={() => setDeleting(item)}>
-                  <Text style={styles.deleteAction}>Delete</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionButton} onPress={() => togglePrivate(item.id, !!item.isPrivate)}>
-                  <Text style={styles.privateAction}>{item.isPrivate ? "Make Public" : "Make Private"}</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+            </Swipeable>
           )}
         />
       )}
@@ -357,18 +368,36 @@ const styles = StyleSheet.create({
   cardTextRow: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
   cardText: { flex: 1, fontSize: 15, lineHeight: 23, color: "#2D2D3A" },
   cardMood: { fontSize: 20, marginTop: 2 },
-  cardActions: {
+  swipeActions: {
     flexDirection: "row",
-    gap: 8,
-    marginTop: 14,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: "#F3F2FA",
+    alignItems: "stretch",
+    marginBottom: 14,
+    marginLeft: 8,
+    gap: 4,
   },
-  actionButton: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
-  editAction: { fontSize: 13, color: "#6C63FF", fontWeight: "700" },
-  privateAction: { fontSize: 13, color: "#8E8EA0", fontWeight: "700" },
-  deleteAction: { fontSize: 13, color: "#E54D4D", fontWeight: "700" },
+  swipeButtonEdit: {
+    backgroundColor: "#6C63FF",
+    justifyContent: "center",
+    alignItems: "center",
+    width: 72,
+    borderRadius: 12,
+  },
+  swipeButtonPrivate: {
+    backgroundColor: "#F5A623",
+    justifyContent: "center",
+    alignItems: "center",
+    width: 72,
+    borderRadius: 12,
+  },
+  swipeButtonDelete: {
+    backgroundColor: "#E54D4D",
+    justifyContent: "center",
+    alignItems: "center",
+    width: 72,
+    borderRadius: 12,
+  },
+  swipeIcon: { fontSize: 20, marginBottom: 4 },
+  swipeButtonText: { color: "#fff", fontSize: 11, fontWeight: "700" },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(10,10,30,0.5)",

@@ -13,6 +13,7 @@ import {
   Modal,
   Pressable,
   Alert,
+  Share,
 } from "react-native";
 import {
   collection,
@@ -345,6 +346,12 @@ export default function Recaps() {
             {recap && (
               <View style={styles.recapCard}>
                 <Text style={styles.recapText}>{recap}</Text>
+                <TouchableOpacity
+                  style={styles.shareButton}
+                  onPress={() => Share.share({ message: recap })}
+                >
+                  <Text style={styles.shareButtonText}>Share Recap</Text>
+                </TouchableOpacity>
               </View>
             )}
 
@@ -500,6 +507,17 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   recapText: { fontSize: 15, lineHeight: 24, color: "#2D2D3A" },
+  shareButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-end",
+    marginTop: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: "#F3F2FA",
+  },
+  shareButtonText: { fontSize: 13, fontWeight: "700", color: "#6C63FF" },
   errorCard: {
     marginTop: 24,
     backgroundColor: "#FFF5F5",

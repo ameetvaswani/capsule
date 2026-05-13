@@ -1,8 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.chatWithMemories = exports.generateRecap = exports.categorizeMemory = void 0;
+exports.deleteExpiredAccounts = exports.chatWithMemories = exports.generateRecap = exports.categorizeMemory = void 0;
 const https_1 = require("firebase-functions/v2/https");
+const scheduler_1 = require("firebase-functions/v2/scheduler");
 const params_1 = require("firebase-functions/params");
+const app_1 = require("firebase-admin/app");
+const firestore_1 = require("firebase-admin/firestore");
+const auth_1 = require("firebase-admin/auth");
+(0, app_1.initializeApp)();
 const anthropicApiKey = (0, params_1.defineSecret)("ANTHROPIC_API_KEY");
 exports.categorizeMemory = (0, https_1.onCall)({ secrets: [anthropicApiKey], invoker: "public" }, async (request) => {
     if (!request.auth) {
@@ -122,5 +127,30 @@ ${memoriesText}`,
     }
     const data = await response.json();
     return { text: data.content[0].text };
+});
+exports.deleteExpiredAccounts = (0, scheduler_1.onSchedule)("every 24 hours", async () => {
+    const firestore = (0, firestore_1.getFirestore)();
+    const authAdmin = (0, auth_1.getAuth)();
+    const usersSnap = await firestore.collectionGroup("account").where("frozen", "==", true).get();
+    for (const accountDoc of usersSnap.docs) {
+        const data = accountDoc.data();
+        const deletionDate = new Date(data.deletionScheduledAt);
+        if (deletionDate.getTime() > Date.now())
+            continue;
+        const userId = accountDoc.ref.parent.parent?.id;
+        if (!userId)
+            continue;
+        const memoriesSnap = await firestore.collection(`users/${userId}/memories`).get();
+        const batch = firestore.batch();
+        memoriesSnap.docs.forEach((d) => batch.delete(d.ref));
+        batch.delete(accountDoc.ref);
+        await batch.commit();
+        try {
+            await authAdmin.deleteUser(userId);
+        }
+        catch (_) {
+            // User may have already been deleted
+        }
+    }
 });
 //# sourceMappingURL=index.js.map
