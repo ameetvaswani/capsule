@@ -415,8 +415,9 @@ const styles = StyleSheet.create({
   listContent: { padding: 24, paddingBottom: 8 },
   privateToggleRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     alignItems: "center",
+    gap: 10,
     marginBottom: 20,
   },
   privateToggleLabel: { fontSize: 14, fontWeight: "600", color: "#8E8EA0" },

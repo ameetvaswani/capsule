@@ -248,6 +248,9 @@ export default function Timeline() {
                   <Text style={styles.cardText}>{item.text}</Text>
                   {item.mood && <Text style={styles.cardMood}>{item.mood}</Text>}
                 </View>
+                <View style={styles.swipeHint}>
+                  <Text style={styles.swipeHintText}>‹‹</Text>
+                </View>
               </View>
             </Swipeable>
           )}
@@ -316,8 +319,9 @@ const styles = StyleSheet.create({
   emptySubtext: { fontSize: 15, color: "#8E8EA0", marginTop: 8, textAlign: "center" },
   toggleRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     alignItems: "center",
+    gap: 10,
     paddingVertical: 12,
     marginBottom: 8,
   },
@@ -368,6 +372,24 @@ const styles = StyleSheet.create({
   cardTextRow: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
   cardText: { flex: 1, fontSize: 15, lineHeight: 23, color: "#2D2D3A" },
   cardMood: { fontSize: 20, marginTop: 2 },
+  swipeHint: {
+    position: "absolute",
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 24,
+    justifyContent: "center",
+    alignItems: "center",
+    borderTopRightRadius: 16,
+    borderBottomRightRadius: 16,
+    backgroundColor: "rgba(108, 99, 255, 0.06)",
+  },
+  swipeHintText: {
+    fontSize: 14,
+    color: "rgba(108, 99, 255, 0.4)",
+    fontWeight: "700",
+    letterSpacing: -2,
+  },
   swipeActions: {
     flexDirection: "row",
     alignItems: "stretch",
