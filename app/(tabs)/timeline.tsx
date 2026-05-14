@@ -225,24 +225,24 @@ export default function Timeline() {
                   <View style={styles.dateBadge}>
                     <Text style={styles.cardDate}>{formatDate(item.date)}</Text>
                   </View>
-                  <TouchableOpacity
-                    style={[
-                      styles.categoryButton,
-                      (item.category || "Personal") === "Professional" ? styles.categoryButtonPro : styles.categoryButtonPersonal,
-                    ]}
-                    onPress={() => updateCategory(item.id, (item.category || "Personal") === "Personal" ? "Professional" : "Personal")}
-                  >
-                    <Text style={[
-                      styles.categoryButtonText,
-                      (item.category || "Personal") === "Professional" ? styles.categoryButtonTextPro : styles.categoryButtonTextPersonal,
-                    ]}>
-                      {(item.category || "Personal") === "Professional" ? "💼 Professional" : "🏠 Personal"}
-                    </Text>
-                    <Text style={[
-                      styles.categoryButtonArrow,
-                      (item.category || "Personal") === "Professional" ? styles.categoryButtonTextPro : styles.categoryButtonTextPersonal,
-                    ]}>⇄</Text>
-                  </TouchableOpacity>
+                  <View style={styles.categorySegment}>
+                    <TouchableOpacity
+                      style={[styles.categorySegmentButton, (item.category || "Personal") === "Personal" && styles.categorySegmentButtonActive]}
+                      onPress={() => updateCategory(item.id, "Personal")}
+                    >
+                      <Text style={[styles.categorySegmentText, (item.category || "Personal") === "Personal" && styles.categorySegmentTextActive]}>
+                        Personal
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.categorySegmentButton, (item.category || "Personal") === "Professional" && styles.categorySegmentButtonActive]}
+                      onPress={() => updateCategory(item.id, "Professional")}
+                    >
+                      <Text style={[styles.categorySegmentText, (item.category || "Personal") === "Professional" && styles.categorySegmentTextActive]}>
+                        Work
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
                 <View style={styles.cardTextRow}>
                   <Text style={styles.cardText}>{item.text}</Text>
@@ -339,28 +339,33 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
-  categoryButton: {
+  categorySegment: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
+    backgroundColor: "#F0F0F5",
+    borderRadius: 8,
+    padding: 2,
   },
-  categoryButtonPersonal: {
-    backgroundColor: "#F3F0FF",
+  categorySegmentButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
   },
-  categoryButtonPro: {
-    backgroundColor: "#EEFBF3",
+  categorySegmentButtonActive: {
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
-  categoryButtonText: {
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  categoryButtonTextPersonal: { color: "#6C63FF" },
-  categoryButtonTextPro: { color: "#2E8B57" },
-  categoryButtonArrow: {
+  categorySegmentText: {
     fontSize: 11,
+    fontWeight: "600",
+    color: "#8E8EA0",
+  },
+  categorySegmentTextActive: {
+    color: "#6C63FF",
+    fontWeight: "700",
   },
   dateBadge: {
     backgroundColor: "#F3F2FA",

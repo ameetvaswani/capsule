@@ -50,13 +50,15 @@ export default function Today() {
     if (!memory.trim() || !user) return;
 
     const text = memory.trim();
+    const now = new Date();
+    const saveDate = date > now ? now : date;
 
     const docRef = await addDoc(collection(db, "users", user.uid, "memories"), {
       text,
       mood: moods.length > 0 ? moods.join(" ") : null,
       category: null,
       createdAt: serverTimestamp(),
-      date: date.toISOString().split("T")[0],
+      date: saveDate.toISOString().split("T")[0],
     });
 
     setMemory("");
